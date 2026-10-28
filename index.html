@@ -55,13 +55,39 @@
     }
     if (total !== expectedBytes) throw new Error(`File size check failed: expected ${expectedBytes} bytes, received ${total}. Re-upload the package files.`);
 
-    // Concatenate in order and stream into the active document. This retains the
-    // deployed HTTPS page URL so relative URLs resolve on GitHub Pages.
     status.textContent = 'Starting the client…';
     document.open();
     const decoder = new TextDecoder('utf-8');
+
+    // Inject a browser-runtime patch before the game's own scripts. It rewrites
+    // Hypixel's 26.2 SkyBlock ZIP URL to a same-origin copy hosted beside this
+    // page, preserving the real pack rather than spoofing a successful load.
+    const fetchPatch = '<scr' + 'ipt>(function(){' +
+      'var realFetch=window.fetch.bind(window);' +
+      'window.fetch=function(input,init){' +
+        'var raw=typeof input==="string"?input:(input&&input.url?input.url:String(input));' +
+        'var u=null;try{u=new URL(raw,window.location.href)}catch(e){}' +
+        'if(u&&u.hostname.toLowerCase()==="resourcepacks.hypixel.net"){' +
+          'var p=u.pathname.split("/").filter(Boolean);' +
+          'if(p.length===3&&p[0]==="SkyBlock"&&p[2]==="88.zip"){' +
+            'var localUrl=new URL("SkyBlock-26.2.zip",window.location.href).href;' +
+            'console.info("[DylanClient] Redirecting Hypixel 26.2 SkyBlock resource pack to the local HTTPS copy:",localUrl);' +
+            'if(typeof Request!=="undefined"&&input instanceof Request){return realFetch(new Request(localUrl,input),init)}' +
+            'return realFetch(localUrl,init);' +
+          '}' +
+        '}' +
+        'return realFetch(input,init);' +
+      '};' +
+    '})();</scr' + 'ipt>';
+
     for (let i = 0; i < buffers.length; i++) {
-      const text = decoder.decode(buffers[i], {stream: i !== buffers.length - 1});
+      let text = decoder.decode(buffers[i], {stream: i !== buffers.length - 1});
+      if (i === 0) {
+        const headMarker = "<head>";
+        const headAt = text.indexOf(headMarker);
+        if (headAt < 0) throw new Error("Could not install the resource-pack patch into the client HTML.");
+        text = text.slice(0, headAt + headMarker.length) + fetchPatch + text.slice(headAt + headMarker.length);
+      }
       buffers[i] = null;
       document.write(text);
     }
