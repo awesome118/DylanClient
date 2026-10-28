@@ -65,7 +65,7 @@ jobs:
         working-directory: source
         run: npm ci
 
-      - name: Apply NoMoreResourcePacks to the Java packet handler
+      - name: Apply NoMoreResourcePacks to the Java packet handler\n        # Also account for the shell's pre-inflated EPK asset marker before relinking.
         run: |
           set -euo pipefail
           python3 scripts/patch-no-more-resourcepacks.py source/game/src/main/java/net/minecraft/client/multiplayer/ClientCommonPacketListenerImpl.java
