@@ -1,0 +1,34 @@
+{
+  "source_filename": "eaglercraft-26.2-r1b-nomusic.html",
+  "source_bytes": 82670050,
+  "source_sha256": "378636d7ff3bd61fca0bc84ee0e8528636b7ff269dc4eb1837e3b5a4c04a7771",
+  "chunk_size_bytes": 18874368,
+  "parts": [
+    {
+      "name": "client.part01.bin",
+      "bytes": 18874368,
+      "sha256": "b86c823782495c39dc1fad1f7e8b1fc51c97856c723eba65156f820a429a5aa4"
+    },
+    {
+      "name": "client.part02.bin",
+      "bytes": 18874368,
+      "sha256": "cadda87341ce6e61e020d98d103feac3bdf0ef0cfcc9e44cdd4ef9870c1aa794"
+    },
+    {
+      "name": "client.part03.bin",
+      "bytes": 18874368,
+      "sha256": "f447286def1ec292c5f6e7a67b4d3c8c9f2c503f3d6042dc813c20186a8b0fcf"
+    },
+    {
+      "name": "client.part04.bin",
+      "bytes": 18874368,
+      "sha256": "0fdb78b1b1efcb75eb45defa6877694b95a239ccec43b425a2779ba185cd6e6e"
+    },
+    {
+      "name": "client.part05.bin",
+      "bytes": 7172578,
+      "sha256": "6615ef6abb59c5f5bef0cd627073cba3a7a96996c09bce8c568b3cda32101ee8"
+    }
+  ],
+  "notes": "Concatenate the parts in listed order to reproduce the original HTML byte-for-byte."
+}
