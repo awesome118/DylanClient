@@ -69,6 +69,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/patch-no-more-resourcepacks.py source/game/src/main/java/net/minecraft/client/multiplayer/ClientCommonPacketListenerImpl.java
+          python3 scripts/patch-epk-compression-n.py source/platform/src/main/java/net/lax1dude/eaglercraft/v1_8/sp/server/export/EPKDecompiler.java
           grep -n -A18 'handleResourcePackPush' source/game/src/main/java/net/minecraft/client/multiplayer/ClientCommonPacketListenerImpl.java | head -24
 
       - name: Reassemble the existing client HTML
