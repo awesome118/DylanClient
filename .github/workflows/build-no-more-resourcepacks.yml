@@ -79,16 +79,28 @@ jobs:
           echo "Existing client bytes: $(wc -c < "$RUNNER_TEMP/dylanclient-original.html")"
           grep -q 'id="eag-inline-wasm-br"' "$RUNNER_TEMP/dylanclient-original.html"
 
-      - name: Compile the patched browser client Wasm
+      - name: Compile the patched browser client Wasm (release link)
         working-directory: source
         env:
           EAGLER_LINK_HEAP_MIB: "10240"
           EAGLER_BUILD_CAP_MIB: "10240"
         run: |
           set -euo pipefail
-          node wasm-toolchain/link-web-target-standalone.js client --fast-analysis
-          test -s target_teavm_wasm_gc/build/generated/teavm/wasm-gc-fast-analysis/classes.wasm
-          test -s target_teavm_wasm_gc/build/generated/teavm/wasm-gc-fast-analysis/classes.wasm-runtime.js
+          node wasm-toolchain/link-web-target-standalone.js client
+          test -s target_teavm_wasm_gc/build/generated/teavm/wasm-gc/classes.wasm
+          test -s target_teavm_wasm_gc/build/generated/teavm/wasm-gc/classes.wasm-runtime.js
+          node <<'NODE'
+          const fs = require("node:fs");
+          const crypto = require("node:crypto");
+          const path = "target_teavm_wasm_gc/build/generated/teavm/wasm-gc/classes.wasm-runtime.js";
+          const bytes = fs.readFileSync(path);
+          const sha256 = crypto.createHash("sha256").update(bytes).digest("hex");
+          const expectedSha256 = "1e80092312d7bfe6efa74f8bb372d5521bc0549dcfbf384f25a145261a80d124";
+          if (bytes.length !== 13984 || sha256 !== expectedSha256) {
+            throw new Error(`Unexpected TeaVM runtime: bytes=${bytes.length}, sha256=${sha256}`);
+          }
+          console.log("Verified exact TeaVM 0.13.1 Wasm-GC runtime:", sha256);
+          NODE
 
       - name: Brotli-compress the patched Wasm and replace only that payload
         shell: bash
@@ -97,7 +109,7 @@ jobs:
           node <<'NODE'
           const fs = require("node:fs");
           const zlib = require("node:zlib");
-          const source = "source/target_teavm_wasm_gc/build/generated/teavm/wasm-gc-fast-analysis/classes.wasm";
+          const source = "source/target_teavm_wasm_gc/build/generated/teavm/wasm-gc/classes.wasm";
           const output = process.env.RUNNER_TEMP + "/classes.wasm.br";
           const raw = fs.readFileSync(source);
           const compressed = zlib.brotliCompressSync(raw, {
