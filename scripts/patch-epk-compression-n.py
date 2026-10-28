@@ -8,15 +8,15 @@ if len(sys.argv) != 2:
 
 path = Path(sys.argv[1])
 raw = path.read_bytes()
-newline = "\\r\\n" if b"\\r\\n" in raw else "\\n"
+newline = "\r\n" if b"\r\n" in raw else "\n"
 source = raw.decode("utf-8")
 
-needle = "case '0':" + newline + "\\t\\t\\t\\tzis = is;" + newline + "\\t\\t\\t\\tbreak;"
+needle = "case '0':" + newline + "\t\t\t\tzis = is;" + newline + "\t\t\t\tbreak;"
 replacement = (
     "case '0':" + newline
-    + "\\t\\t\\tcase 'N': // The HTML shell already inflated this EPK payload." + newline
-    + "\\t\\t\\t\\tzis = is;" + newline
-    + "\\t\\t\\t\\tbreak;"
+    + "\t\t\tcase 'N': // The HTML shell already inflated this EPK payload." + newline
+    + "\t\t\t\tzis = is;" + newline
+    + "\t\t\t\tbreak;"
 )
 
 if replacement in source:
