@@ -88,7 +88,7 @@ def main() -> None:
             "payloadId": "eag-inline-wasm-br",
             "compressedBytes": len(compressed),
             "compressedSha256": sha256(compressed),
-            "source": "target_teavm_wasm_gc/build/generated/teavm/wasm-gc/classes.wasm",
+            "source": "target_teavm_wasm_gc/build/generated/teavm/wasm-gc-fast-analysis/classes.wasm",
         },
         "patch": {
             "name": "NoMoreResourcePacks",
