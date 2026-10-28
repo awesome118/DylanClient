@@ -15,7 +15,7 @@ If GitHub's upload form struggles with all files at once, upload `index.html` fi
 
 ## Important limitations
 
-- The embedded client Wasm is patched to acknowledge required server resource packs without downloading/reloading them. Server-provided pack textures will not load; Hypixel may still reject this unofficial browser client.
+- This only changes how the HTML client is served: from a local `file://` URL to an HTTPS GitHub Pages URL. It **does not** bypass CORS restrictions on a resource-pack host, and therefore may not fix the resource-pack error.
 - The source HTML is an unofficial browser client. Hosting it on GitHub does not make it an officially supported way to access Hypixel, and Hypixel may refuse connections from it.
 - The repository must be public for the free GitHub Pages setup described above. Anyone can view and download these files. Do not add passwords, access tokens, or other private information.
 - On first load, the page fetches about 78.8 MiB of client data. Keep the tab open; a low-memory Chromebook may reload or struggle.
@@ -24,8 +24,8 @@ If GitHub's upload form struggles with all files at once, upload `index.html` fi
 
 Original file: `eaglercraft-26.2-r1b-nomusic.html`
 
-Original bytes: 84,938,122
+Original bytes: 82,670,050
 
-Original SHA-256: `1fc41c888077bf1bb63d298f8e812c443e008e75ef7c549592d4be260737202a`
+Original SHA-256: `378636d7ff3bd61fca0bc84ee0e8528636b7ff269dc4eb1837e3b5a4c04a7771`
 
 The loader verifies the combined byte count before loading. Part hashes are recorded in `manifest.json` for optional verification.
