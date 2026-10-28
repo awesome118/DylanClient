@@ -59,34 +59,49 @@
     document.open();
     const decoder = new TextDecoder('utf-8');
 
-    // Inject a browser-runtime patch before the game's own scripts. It rewrites
-    // Hypixel's 26.2 SkyBlock ZIP URL to a same-origin copy hosted beside this
-    // page, preserving the real pack rather than spoofing a successful load.
-    const fetchPatch = '<scr' + 'ipt>(function(){' +
-      'var realFetch=window.fetch.bind(window);' +
-      'window.fetch=function(input,init){' +
-        'var raw=typeof input==="string"?input:(input&&input.url?input.url:String(input));' +
+    // Inject the bridge patch at the end of the reconstructed client HTML, not in <head>.
+    // This is intentionally late so it wraps the fetch implementation after client scripts
+    // have had a chance to install their own wrappers.
+    const packPatch = '<scr' + 'ipt>(function(){' +
+      'var host="resourcepacks.hypixel.net";' +
+      'function rewriteResourcePack(value){' +
+        'var raw=typeof value==="string"?value:(value&&value.url?value.url:String(value));' +
         'var u=null;try{u=new URL(raw,window.location.href)}catch(e){}' +
-        'if(u&&u.hostname.toLowerCase()==="resourcepacks.hypixel.net"){' +
-          'var p=u.pathname.split("/").filter(Boolean);' +
-          'if(p.length===3&&p[0]==="SkyBlock"&&p[2]==="88.zip"){' +
-            'var localUrl=new URL("SkyBlock-26.2.zip",window.location.href).href;' +
-            'console.info("[DylanClient] Redirecting Hypixel 26.2 SkyBlock resource pack to the local HTTPS copy:",localUrl);' +
-            'if(typeof Request!=="undefined"&&input instanceof Request){return realFetch(new Request(localUrl,input),init)}' +
-            'return realFetch(localUrl,init);' +
+        'if(!u||u.hostname.toLowerCase()!==host)return null;' +
+        'var p=u.pathname.split("/").filter(Boolean);' +
+        'if(p.length!==3||p[0]!=="SkyBlock"||!/^\\d+\\.zip$/.test(p[2]))return null;' +
+        'if(p[2]!=="88.zip")return null;' +
+        'return new URL("SkyBlock-26.2.zip",window.location.href).href;' +
+      '}' +
+      'if(typeof window.fetch==="function"){' +
+        'var nativeFetch=window.fetch.bind(window);' +
+        'window.fetch=function(input,init){' +
+          'var local=rewriteResourcePack(input);' +
+          'if(local){console.info("[DylanClient pack patch] Using locally hosted official 26.2 SkyBlock pack:",local);' +
+            'if(typeof Request!=="undefined"&&input instanceof Request){return nativeFetch(new Request(local,input),init)}' +
+            'return nativeFetch(local,init);' +
           '}' +
-        '}' +
-        'return realFetch(input,init);' +
-      '};' +
+          'return nativeFetch(input,init);' +
+        '};' +
+      '}' +
+      'if(window.XMLHttpRequest&&window.XMLHttpRequest.prototype){' +
+        'var nativeOpen=window.XMLHttpRequest.prototype.open;' +
+        'window.XMLHttpRequest.prototype.open=function(method,url){' +
+          'var local=rewriteResourcePack(url);' +
+          'if(local){console.info("[DylanClient pack patch] Rewriting XHR to local official pack:",local);url=local;}' +
+          'return nativeOpen.apply(this,[method,url].concat(Array.prototype.slice.call(arguments,2)));' +
+        '};' +
+      '}' +
+      'console.info("[DylanClient pack patch] Resource-pack redirect installed");' +
     '})();</scr' + 'ipt>';
 
     for (let i = 0; i < buffers.length; i++) {
       let text = decoder.decode(buffers[i], {stream: i !== buffers.length - 1});
-      if (i === 0) {
-        const headMarker = "<head>";
-        const headAt = text.indexOf(headMarker);
-        if (headAt < 0) throw new Error("Could not install the resource-pack patch into the client HTML.");
-        text = text.slice(0, headAt + headMarker.length) + fetchPatch + text.slice(headAt + headMarker.length);
+      if (i === buffers.length - 1) {
+        const bodyMarker = "</body>";
+        const bodyAt = text.toLowerCase().lastIndexOf(bodyMarker);
+        if (bodyAt < 0) throw new Error("Could not install the resource-pack patch before </body>.");
+        text = text.slice(0, bodyAt) + packPatch + text.slice(bodyAt);
       }
       buffers[i] = null;
       document.write(text);
@@ -97,7 +112,7 @@
     const message = String(err && err.message || err);
     try {
       document.open();
-      document.write('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Client load failed</title><body style="font:16px system-ui;background:#090d16;color:#fff;padding:24px"><h1>Client could not be loaded</h1><p></p><p>Check that index.html and all client.partXX.bin files are in the same GitHub Pages folder, then reload.</p></body>');
+      document.write('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Client load failed</title><body style="font:16px system-ui;background:#090d16;color:#fff;padding:24px"><h1>Client could not be loaded</h1><p></p><p>Check that index.html, all client.partXX.bin files, and SkyBlock-26.2.zip are in the same GitHub Pages folder, then reload.</p></body>');
       document.body.querySelector('p').textContent = message;
       document.close();
     } catch (_) {
