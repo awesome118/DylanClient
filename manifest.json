@@ -1,34 +1,43 @@
 {
-  "source_filename": "eaglercraft-26.2-r1b-nomusic.html",
-  "source_bytes": 82670050,
-  "source_sha256": "378636d7ff3bd61fca0bc84ee0e8528636b7ff269dc4eb1837e3b5a4c04a7771",
-  "chunk_size_bytes": 18874368,
+  "client": "eaglercraft-26.2-r1b-nomusic.html",
+  "clientBytes": 84938342,
+  "clientSha256": "6b17e647873f88a17628c6b47cabde37e8fd5fb035fb27930839ba1ac7888532",
+  "embeddedWasm": {
+    "payloadId": "eag-inline-wasm-br",
+    "compressedBytes": 16294667,
+    "compressedSha256": "5a662e538ef5769aac536dd9fb8588206fbc965ace8a65cc992b5e8fd1ec6623",
+    "source": "target_teavm_wasm_gc/build/generated/teavm/wasm-gc-fast-analysis/classes.wasm"
+  },
+  "patch": {
+    "name": "NoMoreResourcePacks",
+    "behavior": "Acknowledge required server resource packs without downloading or reloading them.",
+    "textures": "Server-provided pack textures are not loaded."
+  },
   "parts": [
     {
-      "name": "client.part01.bin",
-      "bytes": 18874368,
-      "sha256": "b86c823782495c39dc1fad1f7e8b1fc51c97856c723eba65156f820a429a5aa4"
+      "file": "client.part01.bin",
+      "bytes": 18000000,
+      "sha256": "a1575829cbafeea57e1ec57cf3e1fb64bfed7bceaddb8ec19d98084aba8da0b4"
     },
     {
-      "name": "client.part02.bin",
-      "bytes": 18874368,
-      "sha256": "cadda87341ce6e61e020d98d103feac3bdf0ef0cfcc9e44cdd4ef9870c1aa794"
+      "file": "client.part02.bin",
+      "bytes": 18000000,
+      "sha256": "c0ecce8088f1db2a8cdc6f18f035e09b0d0fa1b2de6c0ca60d53f4111c2a2677"
     },
     {
-      "name": "client.part03.bin",
-      "bytes": 18874368,
-      "sha256": "f447286def1ec292c5f6e7a67b4d3c8c9f2c503f3d6042dc813c20186a8b0fcf"
+      "file": "client.part03.bin",
+      "bytes": 18000000,
+      "sha256": "2901a2189be9300ae7000d98f52e394b9f753911e3fb674a6006a6a8b683dee5"
     },
     {
-      "name": "client.part04.bin",
-      "bytes": 18874368,
-      "sha256": "0fdb78b1b1efcb75eb45defa6877694b95a239ccec43b425a2779ba185cd6e6e"
+      "file": "client.part04.bin",
+      "bytes": 18000000,
+      "sha256": "8be4bb561833144c0e4eb62a3e51389de235eff44d817fba39495d13274857d6"
     },
     {
-      "name": "client.part05.bin",
-      "bytes": 7172578,
-      "sha256": "6615ef6abb59c5f5bef0cd627073cba3a7a96996c09bce8c568b3cda32101ee8"
+      "file": "client.part05.bin",
+      "bytes": 12938342,
+      "sha256": "2410194074f20ba5c004fea68233e3398d6d86da110ef38173cd32921605d7ff"
     }
-  ],
-  "notes": "Concatenate the parts in listed order to reproduce the original HTML byte-for-byte."
+  ]
 }
