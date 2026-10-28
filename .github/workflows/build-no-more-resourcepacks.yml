@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: nomoreresourcepacks-build-main
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build-patched-client:
@@ -85,9 +85,9 @@ jobs:
           EAGLER_BUILD_CAP_MIB: "10240"
         run: |
           set -euo pipefail
-          node wasm-toolchain/link-web-target-standalone.js client
-          test -s target_teavm_wasm_gc/build/generated/teavm/wasm-gc/classes.wasm
-          test -s target_teavm_wasm_gc/build/generated/teavm/wasm-gc/classes.wasm-runtime.js
+          node wasm-toolchain/link-web-target-standalone.js client --fast-analysis
+          test -s target_teavm_wasm_gc/build/generated/teavm/wasm-gc-fast-analysis/classes.wasm
+          test -s target_teavm_wasm_gc/build/generated/teavm/wasm-gc-fast-analysis/classes.wasm-runtime.js
 
       - name: Brotli-compress the patched Wasm and replace only that payload
         shell: bash
@@ -96,7 +96,7 @@ jobs:
           node <<'NODE'
           const fs = require("node:fs");
           const zlib = require("node:zlib");
-          const source = "source/target_teavm_wasm_gc/build/generated/teavm/wasm-gc/classes.wasm";
+          const source = "source/target_teavm_wasm_gc/build/generated/teavm/wasm-gc-fast-analysis/classes.wasm";
           const output = process.env.RUNNER_TEMP + "/classes.wasm.br";
           const raw = fs.readFileSync(source);
           const compressed = zlib.brotliCompressSync(raw, {
