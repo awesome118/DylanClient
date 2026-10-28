@@ -1,0 +1,131 @@
+name: Build NoMoreResourcePacks client
+
+on:
+  # Adding/updating this workflow is the one deliberate build trigger.
+  # Generated commits from GITHUB_TOKEN do not create another workflow run.
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-no-more-resourcepacks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nomoreresourcepacks-build-main
+  cancel-in-progress: false
+
+jobs:
+  build-patched-client:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - name: Checkout DylanClient
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Checkout pinned Eaglercraft 26.2 source
+        uses: actions/checkout@v4
+        with:
+          repository: dicestack88/Eaglercraft-26.2-source
+          ref: f73bff91f0f0840bc958c09ab536dbba1e146b2e
+          path: source
+          persist-credentials: false
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: gradle
+          cache-dependency-path: source/**/*.gradle.kts
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Add temporary swap for the Wasm-GC linker
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! sudo swapon --show=NAME | grep -qx '/swapfile'; then
+            sudo fallocate -l 8G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=8192
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile
+            sudo swapon /swapfile
+          fi
+          free -h
+          df -h "$GITHUB_WORKSPACE"
+
+      - name: Install source build tooling
+        working-directory: source
+        run: npm ci
+
+      - name: Apply NoMoreResourcePacks to the Java packet handler
+        run: |
+          set -euo pipefail
+          python3 scripts/patch-no-more-resourcepacks.py source/game/src/main/java/net/minecraft/client/multiplayer/ClientCommonPacketListenerImpl.java
+          grep -n -A18 'handleResourcePackPush' source/game/src/main/java/net/minecraft/client/multiplayer/ClientCommonPacketListenerImpl.java | head -24
+
+      - name: Reassemble the existing client HTML
+        run: |
+          set -euo pipefail
+          cat client.part*.bin > "$RUNNER_TEMP/dylanclient-original.html"
+          echo "Existing client bytes: $(wc -c < "$RUNNER_TEMP/dylanclient-original.html")"
+          grep -q 'id="eag-inline-wasm-br"' "$RUNNER_TEMP/dylanclient-original.html"
+
+      - name: Compile the patched browser client Wasm
+        working-directory: source
+        env:
+          EAGLER_LINK_HEAP_MIB: "10240"
+          EAGLER_BUILD_CAP_MIB: "10240"
+        run: |
+          set -euo pipefail
+          node wasm-toolchain/link-web-target-standalone.js client
+          test -s target_teavm_wasm_gc/build/generated/teavm/wasm-gc/classes.wasm
+          test -s target_teavm_wasm_gc/build/generated/teavm/wasm-gc/classes.wasm-runtime.js
+
+      - name: Brotli-compress the patched Wasm and replace only that payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require("node:fs");
+          const zlib = require("node:zlib");
+          const source = "source/target_teavm_wasm_gc/build/generated/teavm/wasm-gc/classes.wasm";
+          const output = process.env.RUNNER_TEMP + "/classes.wasm.br";
+          const raw = fs.readFileSync(source);
+          const compressed = zlib.brotliCompressSync(raw, {
+            params: {
+              [zlib.constants.BROTLI_PARAM_QUALITY]: 9,
+              [zlib.constants.BROTLI_PARAM_LGWIN]: 24,
+              [zlib.constants.BROTLI_PARAM_SIZE_HINT]: raw.length
+            }
+          });
+          fs.writeFileSync(output, compressed);
+          console.log(JSON.stringify({
+            wasmBytes: raw.length,
+            wasmSha256: require("node:crypto").createHash("sha256").update(raw).digest("hex"),
+            brotliBytes: compressed.length,
+            output
+          }, null, 2));
+          NODE
+          python3 scripts/replace-client-wasm-and-split.py \
+            "$RUNNER_TEMP/dylanclient-original.html" \
+            "$RUNNER_TEMP/classes.wasm.br" \
+            "$GITHUB_WORKSPACE"
+
+      - name: Commit the rebuilt client
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html client.part*.bin manifest.json README.md
+          git diff --cached --stat
+          git commit -m "Implement NoMoreResourcePacks in browser client"
+          git push origin HEAD:main
